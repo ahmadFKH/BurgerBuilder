@@ -26,7 +26,7 @@ class OrderSummary extends Component {
             <ul>
                 {ingSummary}
             </ul>
-        <p>Total Price: {this.props.price}</p>
+        <p>Total Price: {this.props.price.toFixed(2)}</p>
             <p>Contiue to Checkout?</p>
             <Button btnType="Danger" clicked={this.props.purchaseCancelled}>Cancel</Button>
             <Button btnType="Success" clicked={this.props.purchaseContinued}>Continue</Button>
