@@ -4,27 +4,19 @@ import Burger from '../../components/Burger/Burger'
 import BuildControls from '../../components/Burger/BuildControls/builderControls'
 import Modal from '../../components/UI/Modal/Modal'
 import OrderSummary from '../../components/Burger/OrderSummay/OrderSummary'
-import axios from '../../axios-orders'
 import Spinner from '../../components/UI/Spinner/Spinner'
 import withErrorHandler from '../../hoc/ErrorHandler/ErrorHandler'
 import {connect} from 'react-redux'
-import * as actionTypes from '../../sorce/actions'
+import * as actions from '../../store/actions/index'
+import axios from '../../axios-orders'
 
 class BurgerBuilder extends Component {
     state = {
         purchasing: false,
-        loading: false,
-        error: false
     }
 
     componentDidMount() {
-        // axios.get('https://burger-project-react-7f411.firebaseio.com/ingredients.json')
-        // .then(response => {
-        //     this.setState({ingredients: response.data})
-        // })
-        // .catch(error => {
-        //     this.setState({error : true})
-        // });
+        this.props.onInitIng();
     }
 
     updatePurchaseState (ingredients) {
@@ -38,9 +30,15 @@ class BurgerBuilder extends Component {
 
     
     purchaseHandler = () => {
-        this.setState({
-            purchasing: true
-        });
+        if (this.props.isAuthenticated) {
+            this.setState({
+                purchasing: true
+            });
+        }
+        else {
+            this.props.onSetAuthRedirectPath('/checkout')
+            this.props.history.push('/auth')
+        }
     }
 
     purchaseCancelHandler = () => {
@@ -48,6 +46,7 @@ class BurgerBuilder extends Component {
     }
 
     purchaseContinueHandler = () => {
+        this.props.onInitPurchase();
         this.props.history.push('/checkout')
     }
 
@@ -60,7 +59,7 @@ class BurgerBuilder extends Component {
         }
 
         let orderSummary = null
-        let burger = this.state.error ? <p>Ingredients can't be loaded!</p> : <Spinner />;
+        let burger = this.props.error ? <p>Ingredients can't be loaded!</p> : <Spinner />;
 
         if(this.props.ings) {
             burger = (
@@ -70,6 +69,7 @@ class BurgerBuilder extends Component {
                     ingredientAdded={this.props.onIngAdded}
                     ingredientRemoved={this.props.onIngRemoved}
                     disabled={disabledInfo}
+                    isAuth = {this.props.isAuthenticated}
                     price={this.props.price}
                     purchasable={this.updatePurchaseState(this.props.ings)}
                     ordered={this.purchaseHandler}>
@@ -84,10 +84,8 @@ class BurgerBuilder extends Component {
                 price={this.props.price}>
                 </OrderSummary>
         }
-        if (this.state.loading) {
-            orderSummary = <Spinner></Spinner>
-         }
-        //  console.log(burger);
+        // console.log(this.props.isAuthenticated);
+        
         return(
             <Aux>
                 <Modal show={this.state.purchasing} modalClosed={this.purchaseCancelHandler}>
@@ -102,15 +100,20 @@ class BurgerBuilder extends Component {
 
 const mapStateToProps = state => {
     return {
-        ings: state.ingredients,
-        price: state.totalPrice
+        ings: state.burgerBuilder.ingredients,
+        price: state.burgerBuilder.totalPrice,
+        error: state.burgerBuilder.error,
+        isAuthenticated: state.auth.token !== null
     }
 }
 
 const mapDispatchToProps = dispatch => {
     return {
-        onIngAdded: (ingName) => dispatch({type: actionTypes.ADD_INGREDIENT, ingredientName: ingName}),
-        onIngRemoved: (ingName) => dispatch({type: actionTypes.REMOVE_INGREDIENT, ingredientName: ingName})
+        onIngAdded: (ingName) => dispatch(actions.addIngredient(ingName)),
+        onIngRemoved: (ingName) => dispatch(actions.removeIngredient(ingName)),
+        onInitIng: () => dispatch(actions.initIngredients()),
+        onInitPurchase: () => dispatch(actions.purchaseInit()),
+        onSetAuthRedirectPath: (path) => dispatch(actions.setAuthRedirectPath(path))
     }
 }
 
